@@ -4,7 +4,7 @@ import numpy as np
 
 app = Flask(__name__)
 
-DATA_FILE = ".//weather_forecast.csv"  # your cleaned CSV path
+DATA_FILE = "data/weather_forecast.csv"  # your cleaned CSV path
 
 # Load & normalize
 df = pd.read_csv(DATA_FILE)
@@ -127,10 +127,10 @@ def compute_weather_data(region: str, date: str, crop_type: str, data: pd.DataFr
         "avg_temp_next_7d": round(avg_temp_next_7d, 2),
         "extreme_weather_flag": bool(extreme_weather_flag),
         "optimal_harvest_window_days": int(optimal_harvest_window_days),
-        # # additional fields
-        # "rain_72h_mm": round(rain_72h_mm, 2),
-        # "storm_window_days": storm_days,
-        # "flood_risk_flag": bool(flood_risk_flag)
+        # additional fields
+        "rain_72h_mm": round(rain_72h_mm, 2),
+        "storm_window_days": storm_days,
+        "flood_risk_flag": bool(flood_risk_flag)
     }
 
 
