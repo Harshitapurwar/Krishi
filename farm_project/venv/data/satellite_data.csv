@@ -1,0 +1,6 @@
+region,date,ndvi_index,crop_health,ripeness_percentage
+Uttar Pradesh,2025-08-01,0.65,Healthy,45
+Uttar Pradesh,2025-08-05,0.40,Unhealthy,30
+Uttar Pradesh,2025-08-10,0.72,Healthy,70
+Madhya Pradesh,2025-08-01,0.50,Moderate,55
+Madhya Pradesh,2025-08-05,0.35,Unhealthy,25
