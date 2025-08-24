@@ -174,7 +174,7 @@ def generate_advisory(place_name, crop_name, weather_csv, market_csv):
     try:
         market = pd.read_csv(market_csv)
         # Normalize date column
-        market['date'] = pd.to_datetime(market['Arrival_Date'], errors="coerce")
+        market['date'] = pd.to_datetime(market['Arrival_Date'], errors="coerce",dayfirst=True)
         market = market.sort_values("date")
 
         latest_price = market["Modal Price"].iloc[-1]

@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 
 # Load dataset globally
 df_market = pd.read_csv("data/uttar_pradesh_data2.csv")
-df_market["Arrival_Date"] = pd.to_datetime(df_market["Arrival_Date"], format="%d-%m-%Y")
+df_market['date'] = pd.to_datetime(df_market['Arrival_Date'], format="%d-%m-%Y", errors="coerce", dayfirst=True)
+
 
 # Train models for each crop+market
 market_models = {}

@@ -168,7 +168,7 @@ app = Flask(__name__)
 def advisory_endpoint():
     try:
         data = request.get_json()
-        place_name = data.get("place_name", "")
+        place_name = data.get("place_name", "Agra")
         crop_name = data.get("crop_name", "Wheat")
 
         # Input CSV paths (adjust as needed)
