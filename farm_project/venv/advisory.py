@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
+import ee
 from satellite import get_satellite_data
+from weather import compute_weather_data, df as weather_df
+from market import predict_market, df_market
 
 def generate_advisory(place_name, crop_name, weather_csv, market_csv):
     advisory = {"place": place_name, "crop": crop_name, "advice": []}
@@ -12,47 +15,54 @@ def generate_advisory(place_name, crop_name, weather_csv, market_csv):
     except Exception as e:
         advisory["satellite_error"] = str(e)
 
-    # 2. Weather Forecast
+    # 2. Weather Forecast (use compute_weather_data)
     try:
-        weather = pd.read_csv(weather_csv)
-        weather['forecast_date'] = pd.to_datetime(weather['forecast_date'], errors="coerce")
-        weather = weather.sort_values("forecast_date")
-
-        latest_weather = weather.iloc[-1].to_dict()
-        latest_weather = {k: (float(v) if isinstance(v, (np.float32, np.float64)) 
-                              else int(v) if isinstance(v, (np.int32, np.int64)) 
-                              else v)
-                          for k, v in latest_weather.items()}
-        advisory["weather"] = latest_weather
-
-        if latest_weather.get("rainfall_mm", 0) > 20:
-            advisory["advice"].append("Heavy rainfall expected — avoid irrigation.")
+        # Use today's date for forecast
+        today = pd.Timestamp.today().strftime("%Y-%m-%d")
+        weather_result = compute_weather_data(
+            region=place_name,
+            date=today,
+            crop_type=crop_name,
+            data=weather_df
+        )
+        if weather_result is not None:
+            advisory["weather"] = weather_result
+            if weather_result.get("extreme_weather_flag"):
+                advisory["advice"].append("Extreme weather expected — take precautions.")
+            if weather_result.get("optimal_harvest_window_days", 0) == 0:
+                advisory["advice"].append("No optimal harvest window in next 7 days.")
         else:
-            advisory["advice"].append("No heavy rain — irrigation can be planned.")
-        
-        if latest_weather.get("temp_max_degC", 0) > 35:
-            advisory["advice"].append("High temperature — consider mulching to conserve soil moisture.")
+            advisory["weather_error"] = f"No weather data found for {place_name}"
     except Exception as e:
         advisory["weather_error"] = str(e)
 
-    # 3. Market Trends
+    # 3. Market Trends (use predict_market)
     try:
-        market = pd.read_csv(market_csv)
-        market['date'] = pd.to_datetime(market['Arrival_Date'], errors="coerce", dayfirst=True)
-        market = market.sort_values("date")
-
-        latest_price = float(market["Modal Price"].iloc[-1])
-        prev_price = float(market["Modal Price"].iloc[-2]) if len(market) > 1 else latest_price
-
-        advisory["market"] = {
-            "latest_price": latest_price,
-            "prev_price": prev_price
-        }
-
-        if latest_price > prev_price:
-            advisory["advice"].append("Market prices are rising — consider waiting before selling.")
+        # Use today's date for market prediction
+        from datetime import datetime
+        today = datetime.today()
+        # Try to find a matching market for the place_name
+        # Use the first matching market if multiple
+        possible_markets = df_market[df_market["district"].str.lower() == place_name.lower()]["Market"].unique()
+        market_name = possible_markets[0] if len(possible_markets) > 0 else None
+        if market_name is None:
+            # fallback: use any market
+            market_name = df_market["Market"].iloc[0]
+        market_result = predict_market(
+            crop_type=crop_name,
+            market_name=market_name,
+            target_date=today
+        )
+        if market_result is not None:
+            advisory["market"] = market_result
+            if market_result.get("price_trend") == "up":
+                advisory["advice"].append("Market prices are rising — consider waiting before selling.")
+            elif market_result.get("price_trend") == "down":
+                advisory["advice"].append("Market prices are falling — consider selling soon.")
+            else:
+                advisory["advice"].append("Market prices are stable.")
         else:
-            advisory["advice"].append("Market prices are falling — consider selling soon.")
+            advisory["market_error"] = f"No market data found for {place_name}"
     except Exception as e:
         advisory["market_error"] = str(e)
 
